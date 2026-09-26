@@ -63,6 +63,7 @@ pip install openadapt-evals[training]   # GRPO trainer + Outlines constrained de
 pip install openadapt-evals[azure]      # Azure VM management
 pip install openadapt-evals[aws]        # AWS EC2 management
 pip install openadapt-evals[retrieval]  # Demo retrieval agent
+pip install openadapt-evals[omniparser] # OmniParser-based grounder
 pip install openadapt-evals[viewer]     # Live results viewer
 pip install openadapt-evals[all]        # Everything
 ```
@@ -195,6 +196,27 @@ python scripts/run_full_eval.py \
 ```
 
 The endpoint uses the UI-Venus native bounding-box prompt format (`[x1,y1,x2,y2]`) and is compatible with vLLM, Ollama, or any OpenAI-compatible server. Both `DemoExecutor` and `PlannerGrounderAgent` use the same prompt format for consistency.
+
+### OmniParser grounder
+
+`OmniParserGrounder` grounds the planner's target description with [OmniParser](https://github.com/microsoft/OmniParser): the server detects all UI elements and returns a numbered set-of-marks image, then a small VLM picks the matching element index and the grounder clicks its center. Deploy the server with [openadapt-grounding](https://github.com/OpenAdaptAI/openadapt-grounding) and install the extra (`pip install openadapt-evals[omniparser]`).
+
+```python
+from openadapt_evals.agents import OmniParserGrounder, PlannerGrounderAgent
+
+grounder = OmniParserGrounder(
+    "http://localhost:8000",            # OmniParser server (e.g. via SSH tunnel)
+    selector_model="claude-haiku-4-5-20251001",
+    cache_dir="./omniparser_cache",     # optional: saves SOM images + element lists
+)
+agent = PlannerGrounderAgent(
+    planner="claude-sonnet-4-6",
+    planner_provider="anthropic",
+    grounder=grounder,
+)
+```
+
+If no element matches, the grounder returns a no-op `wait` action so the planner can take a fresh look on the next step instead of ending the episode.
 
 ### GRPO training with TRL (recommended)
 
