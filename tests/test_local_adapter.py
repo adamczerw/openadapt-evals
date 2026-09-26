@@ -29,8 +29,14 @@ from openadapt_evals.adapters.local import LocalAdapter
 
 @pytest.fixture
 def adapter():
-    """Create a LocalAdapter with no action delay for fast tests."""
-    return LocalAdapter(action_delay=0.0)
+    """Create a LocalAdapter with no action delay for fast tests.
+
+    The monitor geometry is fixed so tests don't depend on the real display
+    layout of the machine running them.
+    """
+    adapter = LocalAdapter(action_delay=0.0)
+    adapter._monitor = {"left": 0, "top": 0, "width": 1920, "height": 1080}
+    return adapter
 
 
 @pytest.fixture
@@ -268,6 +274,28 @@ class TestLocalAdapterScaling:
         assert lx == pytest.approx(100.0)
         assert ly == pytest.approx(200.0)
 
+    def test_to_logical_adds_monitor_offset(self, adapter):
+        """Coordinates on a non-primary monitor are offset to global space."""
+        adapter._scale = 1.0
+        adapter._monitor = {"left": -1920, "top": 120, "width": 1920, "height": 1080}
+        assert adapter._to_logical(100, 200) == (-1820.0, 320.0)
+
+    def test_to_logical_offset_then_scale(self, adapter):
+        adapter._scale = 2.0
+        adapter._monitor = {"left": 2880, "top": 0, "width": 2880, "height": 1800}
+        assert adapter._to_logical(200, 400) == (1540.0, 200.0)
+
+
+class TestLocalAdapterToPixels:
+    def test_normalized_coords_scaled_to_monitor(self, adapter):
+        assert adapter._to_pixels(0.5, 0.25) == (960.0, 270.0)
+
+    def test_pixel_coords_unchanged(self, adapter):
+        assert adapter._to_pixels(640, 480) == (640, 480)
+
+    def test_mixed_range_treated_as_pixels(self, adapter):
+        assert adapter._to_pixels(0.5, 480) == (0.5, 480)
+
 
 # ---------------------------------------------------------------------------
 # Key resolution
@@ -279,6 +307,10 @@ class TestKeyResolution:
     def test_known_key(self):
         resolved = LocalAdapter._resolve_key("enter")
         assert resolved == Key.enter
+
+    def test_windows_key_aliases(self):
+        assert LocalAdapter._resolve_key("win") == Key.cmd
+        assert LocalAdapter._resolve_key("windows") == Key.cmd
 
     def test_single_char(self):
         resolved = LocalAdapter._resolve_key("a")
