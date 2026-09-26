@@ -89,6 +89,10 @@ retrieval = [
     # For RetrievalAugmentedAgent with automatic demo selection
     "openadapt-retrieval>=0.1.0",
 ]
+omniparser = [
+    # For OmniParserGrounder (OmniParser element detection + VLM selection)
+    "openadapt-grounding>=0.1.2",
+]
 viewer = [
     # For live benchmark viewer API server
     "flask>=3.0.0",

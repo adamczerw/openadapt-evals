@@ -16,6 +16,7 @@ Available agents:
     - PolicyAgent: Uses local trained policy model
     - RetrievalAugmentedAgent: Automatically retrieves demos from a library
     - PlannerGrounderAgent: Planner-grounder architecture (SeeAct/UFO2/CODA)
+    - OmniParserGrounder: OmniParser + VLM grounder for PlannerGrounderAgent
     - DemoGuidedAgent: Demo-guided execution with self-verification
     - BaselineAgent: Unified baselines using openadapt-ml (Claude/GPT/Gemini)
 
@@ -100,6 +101,9 @@ def __getattr__(name: str):
     if name == "SmolOperatorAgent":
         from openadapt_evals.agents.smol_agent import SmolOperatorAgent
         return SmolOperatorAgent
+    if name == "OmniParserGrounder":
+        from openadapt_evals.agents.omniparser_grounder import OmniParserGrounder
+        return OmniParserGrounder
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 __all__ = [
@@ -117,6 +121,7 @@ __all__ = [
     "PolicyAgent",
     "RetrievalAugmentedAgent",
     "PlannerGrounderAgent",
+    "OmniParserGrounder",
     "DemoGuidedAgent",
     "BaselineAgent",
     # Utilities

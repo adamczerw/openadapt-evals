@@ -185,8 +185,13 @@ def _vlm_call_anthropic(
         "model": model,
         "messages": [{"role": "user", "content": content}],
         "max_tokens": max_tokens,
-        "temperature": temperature,
     }
+    # Opus 4.7+ (incl. Opus 5 / 5.5), Sonnet 5, Fable, and Mythos models removed
+    # sampling params — sending temperature to them returns a 400. Opus 4.6,
+    # Sonnet 4.6, Haiku 4.5 and older models still accept it.
+    _no_temperature = ("opus-4-7", "opus-4-8", "opus-5", "sonnet-5", "fable", "mythos")
+    if not any(m in model for m in _no_temperature):
+        kwargs["temperature"] = temperature
     if system:
         kwargs["system"] = system
     resp = client.messages.create(**kwargs)

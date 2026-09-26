@@ -96,6 +96,7 @@ class LocalAdapter(BenchmarkAdapter):
         self._action_delay = action_delay
         self._monitor_index = monitor_index
         self._scale: float | None = None
+        self._monitor: dict | None = None
         self._current_task: BenchmarkTask | None = None
         self._step_count = 0
 
@@ -123,10 +124,31 @@ class LocalAdapter(BenchmarkAdapter):
                 logger.info("HiDPI detected: scale factor = %.1f", self._scale)
         return self._scale
 
+    def _ensure_monitor(self) -> dict:
+        """Lazily fetch and cache the selected monitor's geometry.
+
+        Returns the ``mss`` monitor dict (``left``, ``top``, ``width``,
+        ``height``) in physical pixels.
+        """
+        if self._monitor is None:
+            import mss  # type: ignore[import-untyped]
+
+            with mss.mss() as sct:
+                self._monitor = dict(sct.monitors[self._monitor_index])
+        return self._monitor
+
     def _to_logical(self, x: float, y: float) -> tuple[float, float]:
-        """Convert physical pixel coordinates to logical points."""
+        """Convert monitor-relative physical pixels to global logical points.
+
+        Action coordinates are relative to the captured monitor, so they are
+        offset by the monitor's position on the virtual desktop before
+        scaling (non-primary monitors don't start at 0, 0).
+        """
         s = self._ensure_scale()
-        return x / s, y / s
+        monitor = self._ensure_monitor()
+        global_x = monitor["left"] + x
+        global_y = monitor["top"] + y
+        return global_x / s, global_y / s
 
     # ------------------------------------------------------------------
     # Observation
@@ -276,6 +298,19 @@ class LocalAdapter(BenchmarkAdapter):
         else:
             logger.warning("Unknown action type: %s", action_type)
 
+    def _to_pixels(self, x: float, y: float) -> tuple[float, float]:
+        """Convert normalized (0–1) coordinates to physical pixels if needed.
+
+        Agents that follow the framework convention output normalized coords.
+        Agents like ApiAgent output raw pixels. We detect which by checking
+        whether both values are in [0, 1].
+        """
+        if 0.0 <= x <= 1.0 and 0.0 <= y <= 1.0:
+            monitor = self._ensure_monitor()
+            x = x * monitor["width"]
+            y = y * monitor["height"]
+        return x, y
+
     def _do_click(self, action: BenchmarkAction) -> None:
         """Execute a mouse click action."""
         from pynput.mouse import Button, Controller as MouseController  # type: ignore[import-untyped]
@@ -283,6 +318,7 @@ class LocalAdapter(BenchmarkAdapter):
         mouse = MouseController()
         x = action.x if action.x is not None else 0
         y = action.y if action.y is not None else 0
+        x, y = self._to_pixels(x, y)
         lx, ly = self._to_logical(x, y)
         mouse.position = (lx, ly)
 
@@ -356,6 +392,8 @@ class LocalAdapter(BenchmarkAdapter):
         end_x = action.end_x if action.end_x is not None else start_x
         end_y = action.end_y if action.end_y is not None else start_y
 
+        start_x, start_y = self._to_pixels(start_x, start_y)
+        end_x, end_y = self._to_pixels(end_x, end_y)
         sx, sy = self._to_logical(start_x, start_y)
         ex, ey = self._to_logical(end_x, end_y)
 
@@ -410,6 +448,8 @@ class LocalAdapter(BenchmarkAdapter):
             "cmd": Key.cmd,
             "command": Key.cmd,
             "super": Key.cmd,
+            "win": Key.cmd,
+            "windows": Key.cmd,
             "f1": Key.f1,
             "f2": Key.f2,
             "f3": Key.f3,
