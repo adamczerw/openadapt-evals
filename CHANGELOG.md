@@ -1,6 +1,36 @@
 # CHANGELOG
 
 
+## Unreleased
+
+### Bug Fixes
+
+- Don't send temperature to Claude models that reject sampling params
+  ([`a73e748`](https://github.com/adamczerw/openadapt-evals/commit/a73e74819efe9607039a077c4972bc0ffe107552))
+
+Opus 4.7/4.8, Opus 5/5.5, Sonnet 5, Fable and Mythos models return a 400 when temperature is set.
+
+- Write the benchmark viewer HTML as UTF-8
+  ([`115da35`](https://github.com/adamczerw/openadapt-evals/commit/115da35237963c2eadf51a19005538f7d8dd6c38))
+
+- Ask the planner for precise grounding targets
+  ([`65418c9`](https://github.com/adamczerw/openadapt-evals/commit/65418c9e2bb33b83fcbca12076f60f03bab317de))
+
+- Make LocalAdapter act on the selected monitor
+  ([`0094e8f`](https://github.com/adamczerw/openadapt-evals/commit/0094e8f8eca013e66317d281cc0f149c8bfd9bec))
+
+Clicks and drags are offset by the selected monitor's position, normalized (0-1) coordinates are
+  scaled to the monitor, and "win"/"windows" are accepted as key names.
+
+### Features
+
+- Add OmniParserGrounder for PlannerGrounderAgent
+  ([`df15a73`](https://github.com/adamczerw/openadapt-evals/commit/df15a73de58818159bbf98a9317b4cc8b879aa3a))
+
+OmniParser detects UI elements, a small VLM picks the one matching the planner's target, and the
+  grounder clicks its center. Install with `pip install openadapt-evals[omniparser]`.
+
+
 ## v0.87.0 (2026-04-01)
 
 ### Features
