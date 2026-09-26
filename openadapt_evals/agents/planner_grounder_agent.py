@@ -120,7 +120,7 @@ Output a JSON object with exactly these fields:
 {{"decision": "COMMAND" | "DONE" | "FAIL",
   "action_type": "click" | "double_click" | "type" | "key" | "scroll",
   "action_value": "<text to type, key to press, or empty for click/double_click>",
-  "target_description": "<what element to interact with>",
+  "target_description": "<exact UI element: button label, menu item name, field placeholder, or precise visual description. To activate a window, specify exactly where to click it (e.g. its title bar).>",
   "reasoning": "<brief explanation of how this action advances the task>"}}
 
 Rules:
@@ -330,7 +330,7 @@ class PlannerGrounderAgent(BenchmarkAgent):
         # -- Step 1: Call planner ------------------------------------------
         planner_output = self._call_planner(observation, task)
 
-        decision = planner_output.get("decision", "COMMAND").upper()
+        decision = planner_output.get("decision", "").upper()
         reasoning = planner_output.get("reasoning", "")
 
         # Extract structured fields (new format) with backward-compat
@@ -341,8 +341,10 @@ class PlannerGrounderAgent(BenchmarkAgent):
         instruction = planner_output.get("instruction", target_description)
 
         logger.info(
-            "Planner decision=%s, instruction=%r, reasoning=%r",
+            "Planner decision=%s, action_type=%s, action_value=%r, instruction=%r, reasoning=%r",
             decision,
+            action_type,
+            action_value,
             instruction,
             reasoning,
         )
@@ -722,9 +724,6 @@ class PlannerGrounderAgent(BenchmarkAgent):
             anti_loop_warning=anti_loop_warning,
         )
 
-        logger.info(
-            "Planner task instruction: %r", task.instruction,
-        )
         logger.debug("Planner full prompt:\n%s", prompt[:2000])
 
         images = [observation.screenshot] if observation.screenshot else None
