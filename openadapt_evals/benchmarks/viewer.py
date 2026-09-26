@@ -304,7 +304,7 @@ def generate_benchmark_viewer(
     # Write output
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(html)
+    output_path.write_text(html, encoding="utf-8")
 
     logger.info(f"Generated benchmark viewer: {output_path}")
     return output_path
